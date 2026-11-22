@@ -11,7 +11,8 @@ public record CommandAction(String command) implements Action {
     public void execute(Location location, Player killer, Entity victim) {
         String formatted = command
                 .replace("%player%", killer.getName())
-                .replace("%victim%", victim.getName());
+                // A mob's name tag is player input and must not reach the console
+                .replace("%victim%", victim instanceof Player ? victim.getName() : victim.getType().getKey().getKey());
         
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), formatted);
     }

@@ -7,15 +7,18 @@ import org.bukkit.plugin.Plugin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public class DatabaseManager {
     private final Plugin plugin;
     private HikariDataSource dataSource;
+    private boolean mysql;
     private final Map<UUID, PlayerData> statsCache = new ConcurrentHashMap<>();
 
     public DatabaseManager(Plugin plugin) {
@@ -25,7 +28,8 @@ public class DatabaseManager {
     public void initialize(String type, String host, int port, String database, String username, String password) {
         HikariConfig config = new HikariConfig();
         
-        if (type.equalsIgnoreCase("mysql")) {
+        mysql = type.equalsIgnoreCase("mysql");
+        if (mysql) {
             config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
@@ -37,12 +41,13 @@ public class DatabaseManager {
 
         config.setUsername(username);
         config.setPassword(password);
-        config.setMaximumPoolSize(10);
+        config.setMaximumPoolSize(mysql ? 10 : 1);
         config.setConnectionTimeout(TimeUnit.SECONDS.toMillis(30));
         config.setKeepaliveTime(TimeUnit.MINUTES.toMillis(1));
 
         this.dataSource = new HikariDataSource(config);
         createTables();
+        loadAll();
         startBatchTask();
     }
 
@@ -58,7 +63,25 @@ public class DatabaseManager {
                      ")")) {
             ps.execute();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not create the KillEffects table", e);
+        }
+    }
+
+    private void loadAll() {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT uuid, kills, highest_streak, selected_effect, random_mode FROM killeffects_players");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                PlayerData data = new PlayerData(UUID.fromString(rs.getString("uuid")));
+                data.kills = rs.getInt("kills");
+                data.highest_streak = rs.getInt("highest_streak");
+                data.selectedEffect = rs.getString("selected_effect");
+                data.randomMode = rs.getBoolean("random_mode");
+                statsCache.put(data.getUuid(), data);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not load KillEffects player data", e);
         }
     }
 
@@ -70,13 +93,14 @@ public class DatabaseManager {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::saveAll, 12000L, 12000L); // Every 10 minutes
     }
 
-    public void saveAll() {
+    public synchronized void saveAll() {
         if (statsCache.isEmpty()) return;
 
-        String query = "INSERT INTO killeffects_players (uuid, kills, highest_streak, selected_effect, random_mode) " +
-                       "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
-                       "kills = VALUES(kills), highest_streak = VALUES(highest_streak), " +
-                       "selected_effect = VALUES(selected_effect), random_mode = VALUES(random_mode)";
+        String query = "INSERT INTO killeffects_players (uuid, kills, highest_streak, selected_effect, random_mode) VALUES (?, ?, ?, ?, ?) " + (mysql
+                ? "ON DUPLICATE KEY UPDATE kills = VALUES(kills), highest_streak = VALUES(highest_streak), " +
+                  "selected_effect = VALUES(selected_effect), random_mode = VALUES(random_mode)"
+                : "ON CONFLICT(uuid) DO UPDATE SET kills = excluded.kills, highest_streak = excluded.highest_streak, " +
+                  "selected_effect = excluded.selected_effect, random_mode = excluded.random_mode");
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -93,7 +117,7 @@ public class DatabaseManager {
             ps.executeBatch();
             conn.commit();
         } catch (SQLException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Could not save player data", e);
         }
     }
 

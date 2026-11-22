@@ -82,14 +82,14 @@ effects:
         sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
         volume: 1.0
         pitch: 1.0
-        particle: "VILLAGER_HAPPY"
+        particle: "HAPPY_VILLAGER"
         count: 50
         offsetX: 0.5
         offsetY: 1.0
         offsetZ: 0.5
         extra: 0.2
       200:
-        particle: "VILLAGER_HAPPY"
+        particle: "HAPPY_VILLAGER"
         count: 30
         offsetY: 2.0
         extra: 0.1

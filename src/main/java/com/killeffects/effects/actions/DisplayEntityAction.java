@@ -18,6 +18,7 @@ public record DisplayEntityAction(Material material, long durationMs, Vector3f s
         Location spawnLoc = location.clone().add(offset.x, offset.y, offset.z);
         
         BlockDisplay display = spawnLoc.getWorld().spawn(spawnLoc, BlockDisplay.class, entity -> {
+            entity.setPersistent(false);
             entity.setBlock(material.createBlockData());
             entity.setBrightness(new Display.Brightness(15, 15));
             

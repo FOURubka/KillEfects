@@ -14,6 +14,7 @@ public class KillEffectsPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        getDataFolder().mkdirs();
         saveDefaultConfig();
 
         toggleManager = new com.killeffects.utils.ToggleManager();
@@ -35,6 +36,8 @@ public class KillEffectsPlugin extends JavaPlugin {
 
         // Register Listeners
         getServer().getPluginManager().registerEvents(new KillListener(this), this);
+
+        getServer().getPluginManager().registerEvents(new com.killeffects.gui.EffectGUI.ClickListener(this), this);
 
         // Register Commands
         com.killeffects.commands.CommandManager cmdManager = new com.killeffects.commands.CommandManager(this);

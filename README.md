@@ -1,20 +1,19 @@
 # KillEffects
 
-**KillEffects** is a high-performance, professional cosmetic engine for Minecraft servers (Paper 1.21+). It allows players to trigger stunning visual and auditory effects upon killing opponents.
+**KillEffects** is a cosmetic plugin for Minecraft servers (Paper 1.21+). It allows players to trigger visual and sound effects upon killing opponents.
 
 ## Features
 
 *   **Action-Chain Engine:** Create complex effects with specific timing (e.g., sound at 0ms, particles at 200ms).
 *   **Structural Effects:** Uses **Display Entities** (ItemDisplay/BlockDisplay) to spawn temporary graves, crowns, or magical structures without world griefing.
 *   **Performance Optimized:**
-    *   **Packet-based Particles:** Sent via ProtocolLib to minimize main-thread load.
+    *   **Per-player Particles:** Only sent to nearby players who have effects enabled.
     *   **Fake Lightning:** Visual-only lightning that doesn't damage players or cause screen-shake for everyone.
     *   **Batch Database Saving:** Asynchronous MySQL/SQLite saving to handle massive PvP events.
     *   **Low-End PC Toggle:** Players can use `/ke toggle` to hide effects they don't want to see.
 *   **Integrations:**
-    *   **ItemsAdder / Oraxen / Nexo:** Spawn custom 3D models on kill.
     *   **PlaceholderAPI:** Full support for kills, streaks, and selected effects.
-*   **Modern UI:** Clean, page-based GUI with MiniMessage (Hex color) support.
+*   **Modern UI:** Clean, GUI with MiniMessage (Hex color) support.
 
 ## Commands
 
@@ -54,5 +53,4 @@ effects:
 *   Paper 1.21+
 *   ProtocolLib (Required)
 *   PlaceholderAPI (Optional)
-*   ItemsAdder/Oraxen (Optional)
 
